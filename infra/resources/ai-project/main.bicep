@@ -32,4 +32,3 @@ module mcpTools '../../bicep-modules/mcptool.bicep' = [
   }
 ]
 
-

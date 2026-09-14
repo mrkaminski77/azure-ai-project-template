@@ -41,6 +41,14 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2026-04-01' = {
     networkAcls: {
       bypass: 'None'
       defaultAction: 'Deny'
+      // Allows the Function App's outbound subnet to reach this account via the
+      // Microsoft.Storage service endpoint (subnet must have that endpoint enabled).
+      virtualNetworkRules: empty(outboundSubnetId) ? [] : [
+        {
+          id: outboundSubnetId
+          action: 'Allow'
+        }
+      ]
     }
   }
 }
