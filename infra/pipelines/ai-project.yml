@@ -1,0 +1,46 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - infra/resources/ai-project/**
+
+variables:
+  - template: 'infra/env-config.yml'
+
+stages:
+  - stage: DeployAIProject
+    displayName: 'Deploy AI Project'
+    jobs:
+      - job: Deploy
+        displayName: 'Deploy AI Project Job'
+        container: mcr.microsoft.com/azure-cli:latest # bundles python + az cli for the bicep deploy and agent script
+        steps:
+          - checkout: self
+          - task: AzureResourceManagerTemplateDeployment@3
+            inputs:
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: '$(azureServiceConnection)'
+              subscriptionId: '$(subscriptionId)'
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: '$(resourceGroupName)'
+              location: '$(location)'
+              templateLocation: 'Linked artifact'
+              csmFile: '$(System.DefaultWorkingDirectory)/infra/resources/ai-project/main.bicep'
+              csmParametersFile: '$(System.DefaultWorkingDirectory)/infra/resources/ai-project/main.bicepparam'
+            displayName: 'Deploy AI Project + MCP Tools Bicep'
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              addSpnToEnvironment: true
+              inlineScript: |
+                pip install -r infra/resources/ai-project/scripts/requirements.txt
+                # map the service connection's SPN into the env vars azure-identity's DefaultAzureCredential expects
+                export AZURE_CLIENT_ID="$servicePrincipalId"
+                export AZURE_CLIENT_SECRET="$servicePrincipalKey"
+                export AZURE_TENANT_ID="$tenantId"
+                python infra/resources/ai-project/scripts/deploy_agents.py --environment $(environment)
+            displayName: 'Deploy Foundry Agent Definitions'

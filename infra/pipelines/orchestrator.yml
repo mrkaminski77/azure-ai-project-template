@@ -1,0 +1,35 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - infra/resources/orchestrator/**
+
+variables:
+  - template: 'infra/env-config.yml'
+
+stages:
+-  stage: DeployOrchestrator
+  displayName: 'Deploy Orchestrator'
+  jobs:
+    - job: Deploy
+      displayName: 'Deploy Orchestrator Job'
+      steps:
+        - script: echo "Deploying Orchestrator"
+          displayName: 'Deploy Orchestrator Step'
+        - checkout: self
+        - task: AzureResourceManagerTemplateDeployment@3
+          inputs:
+            deploymentScope: 'Resource Group'
+            azureResourceManagerConnection: '$(azureServiceConnection)'
+            subscriptionId: '$(subscriptionId)'
+            action: 'Create Or Update Resource Group'
+            resourceGroupName: '$(resourceGroupName)'
+            location: '$(location)'
+            templateLocation: 'Linked artifact'
+            csmFile: '$(System.DefaultWorkingDirectory)/infra/orchestrator/main.bicep'
+            csmParametersFile: '$(System.DefaultWorkingDirectory)/infra/orchestrator/main.bicepparam'
+            # use overrideParameters: >- if you want to override parameters in the Bicep parameters file
+          displayName: 'Deploy Orchestrator Bicep'
+          

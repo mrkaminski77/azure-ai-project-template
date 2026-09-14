@@ -1,0 +1,5 @@
+orchestratorFunctionAppName: sra1t-func-orchestrator
+
+mcpTools:
+  bidsentinel:
+    mcpFunctionAppName: sra1t-func-aiplatform

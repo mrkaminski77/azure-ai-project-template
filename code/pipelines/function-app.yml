@@ -1,0 +1,53 @@
+trigger: none
+
+resources:
+  repositories:
+    # code lives in a separate repo from this template repo, so watch it explicitly
+    - repository: functionApp
+      type: git
+      name: '<project-name>/function-app'
+      ref: refs/heads/main
+      trigger:
+        branches:
+          include:
+            - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureServiceConnection: '<your-service-connection>'
+  resourceGroupName: 'sra1np-rg-aiplatform'
+  functionAppName: 'sra1t-func-aiplatform-dev'
+
+stages:
+  - stage: DeployFunctionAppCode
+    displayName: 'Deploy Function App Code'
+    jobs:
+      - job: ZipDeploy
+        displayName: 'Zip Deploy Function App'
+        steps:
+          - checkout: functionApp
+            clean: true
+
+          - task: ArchiveFiles@2
+            displayName: 'Zip Function App'
+            inputs:
+              rootFolderOrFile: '$(Pipeline.Workspace)/functionApp'
+              includeRootFolder: false
+              archiveType: 'zip'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/function-app.zip'
+              replaceExistingArchive: true
+              customCmd: '-x!*.bicep -x!*.yaml -x!*.yml -x!*.git* -x!*.zip'
+
+          - task: AzureCLI@2
+            displayName: 'Deploy Function App'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az functionapp deployment source config-zip \
+                  --resource-group "$(resourceGroupName)" \
+                  --name "$(functionAppName)" \
+                  --src "$(Build.ArtifactStagingDirectory)/function-app.zip"

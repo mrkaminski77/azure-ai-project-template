@@ -1,0 +1,16 @@
+{
+    "id": "{{agentId}}",
+    "name": "{{agentId}}",
+    "object": "agent",
+    "definition": {
+        "instructions": "{{instructions}}",
+        "kind": "prompt",
+        "model": "gpt-5",
+        "tools": [
+        ]
+    },
+    "metadata": {
+        "description": "",
+        "logo": "Avatar_Default.svg"
+    }
+  }

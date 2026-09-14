@@ -1,0 +1,27 @@
+dev:
+  # Shared configuration for the AI platform infrastructure
+
+  subscriptionId: 9763c68a-41e0-4829-828c-ba0bdd37b5eb
+  resourceGroupName: sra1np-rg-aiplatform
+  azureServiceConnection: '<your-service-connection>'
+
+  location: Australia East
+  environment: dev
+
+  logAnalyticsWorkspaceId: /subscriptions/9763c68a-41e0-4829-828c-ba0bdd37b5eb/resourceGroups/sra1np-rg-aiplatform/providers/Microsoft.OperationalInsights/workspaces/sra1t-law-aiplatform
+
+  keyVaultResourceGroupName: sra1np-rg-aiplatform
+  keyVaultName: sra1t-kv-aiplatform
+
+  sqlServerName: sra1t-sql-aiplatform
+  sqlServerPort: 1433
+
+  flexConsumptionSubnetId: /subscriptions/9763c68a-41e0-4829-828c-ba0bdd37b5eb/resourceGroups/sra1np-rg-aiplatform/providers/Microsoft.Network/virtualNetworks/sra1t-vnet-aiplatform/subnets/outbound
+
+  foundryResourceGroupName: sra1np-rg-aiplatform
+  foundryResourceName: sra1t-foundry-aiplatform
+
+  easyAuthConfig:
+    entraClientId: 485bb1e6-01e0-4238-90cb-491deea74f92
+    secretName: 485bb1e6-01e0-4238-90cb-491deea74f92
+    tenantId: 485bb1e6-01e0-4238-90cb-491deea74f92

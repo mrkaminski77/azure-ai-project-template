@@ -1,0 +1,9 @@
+agentId: agent1
+agentName: agent1
+model: gpt-5
+    tools: 
+      - project_connection_id: mcpTool
+        server_label: mcpTool
+        function: sra1np-func-project-mcp
+        type: mcp
+        require_approval: never

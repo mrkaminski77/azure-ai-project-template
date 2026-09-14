@@ -1,0 +1,4 @@
+
+functionAppName: sra1t-func-aiplatform
+publicNetworkAccess: Disabled
+additionalAppSettings: {}
