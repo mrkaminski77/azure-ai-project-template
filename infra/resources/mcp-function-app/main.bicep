@@ -21,5 +21,10 @@ module functionApp '../../bicep-modules/flexConsumption.bicep' = {
     keyVaultResourceGroupName: envConfig.keyVaultResourceGroupName
     easyAuthConfig: envConfig.?easyAuthConfig ?? {}
     additionalAppSettings: additionalAppSettings
+    envName: environment
+    storageBlobDataReaders: funcConfig.?storageBlobDataReaders ?? []
+    storageBlobDataContributors: funcConfig.?storageBlobDataContributors ?? []
+    containers: funcConfig.?containers ?? []
   }
 }
+

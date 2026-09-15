@@ -13,6 +13,15 @@ param easyAuthConfig object = {}
 // Extra app settings merged in at creation time (e.g. Key Vault secret references) so callers
 // never need to read-modify-write appsettings via listAppSettings() after this module runs.
 param additionalAppSettings object = {}
+// Suffix used to resolve other Function Apps referenced by storageBlobDataReaders/Contributors
+// (those lists give unsuffixed base names, matching the convention used for functionAppName).
+param envName string = ''
+// Base names (unsuffixed) of other Function Apps whose system-assigned identity should be
+// granted Storage Blob Data Reader / Contributor on this module's storage account.
+param storageBlobDataReaders array = []
+param storageBlobDataContributors array = []
+// Additional blob containers to create alongside the required 'deployment' container.
+param containers array = []
 var deploymentStorageAccountName = 'stg${uniqueString(functionAppName)}'
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2024-11-01' = {
@@ -73,6 +82,11 @@ resource deploymentContainer 'Microsoft.Storage/storageAccounts/blobServices/con
   name: 'deployment'
 }
 
+resource additionalContainers 'Microsoft.Storage/storageAccounts/blobServices/containers@2026-04-01' = [for containerName in containers: {
+  parent: blobService
+  name: containerName
+}]
+
 resource storageDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   scope: blobService
   name: '${deploymentStorageAccountName}-diagnostics'
@@ -101,6 +115,8 @@ resource storageDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 var storageBlobDataOwnerRoleId = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
 var storageTableDataContributorRoleId = '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
 var storageQueueDataContributorRoleId = '974c5e8b-45b9-4653-ba55-5f855dd0fb88'
+var storageBlobDataReaderRoleId = '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
+var storageBlobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 
 resource storageBlobOwnerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   // Role assignment names must be GUIDs; guid(...) keeps this deterministic per storage
@@ -137,6 +153,36 @@ resource storageQueueContributorRoleAssignment 'Microsoft.Authorization/roleAssi
     principalType: 'ServicePrincipal'
   }
 }
+
+// Other Function Apps (by base name) granted read/write access to this storage account,
+// e.g. a second Function App that needs to read or write blobs this app produces.
+resource storageBlobDataReaderSites 'Microsoft.Web/sites@2024-11-01' existing = [for name in storageBlobDataReaders: {
+  name: '${name}-${envName}'
+}]
+
+resource storageBlobDataReaderRoleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (name, i) in storageBlobDataReaders: {
+  name: guid(storageAccount.id, storageBlobDataReaderSites[i].id, storageBlobDataReaderRoleId)
+  scope: storageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataReaderRoleId)
+    principalId: storageBlobDataReaderSites[i].identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}]
+
+resource storageBlobDataContributorSites 'Microsoft.Web/sites@2024-11-01' existing = [for name in storageBlobDataContributors: {
+  name: '${name}-${envName}'
+}]
+
+resource storageBlobDataContributorRoleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (name, i) in storageBlobDataContributors: {
+  name: guid(storageAccount.id, storageBlobDataContributorSites[i].id, storageBlobDataContributorRoleId)
+  scope: storageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleId)
+    principalId: storageBlobDataContributorSites[i].identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}]
 
 resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
   name: functionAppName
