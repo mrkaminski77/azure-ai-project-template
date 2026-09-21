@@ -1,6 +1,0 @@
-
-functionAppName: orchestrator
-publicNetworkAccess: Disabled
-additionalAppSettings: {}
-storageBlobDataContributors:
-  - mcp-function-app

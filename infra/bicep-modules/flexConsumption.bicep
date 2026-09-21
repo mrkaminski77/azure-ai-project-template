@@ -13,8 +13,9 @@ param easyAuthConfig object = {}
 // Extra app settings merged in at creation time (e.g. Key Vault secret references) so callers
 // never need to read-modify-write appsettings via listAppSettings() after this module runs.
 param additionalAppSettings object = {}
-// Suffix used to resolve other Function Apps referenced by storageBlobDataReaders/Contributors
-// (those lists give unsuffixed base names, matching the convention used for functionAppName).
+// Per project naming conventions (docs/naming-and-identity-conventions.md):
+// Resources that have a system identity should always be suffixed with an environment designator.
+// When granting access to storage accounts, unsuffixed base names are expected and the suffix is added.
 param envName string = ''
 // Base names (unsuffixed) of other Function Apps whose system-assigned identity should be
 // granted Storage Blob Data Reader / Contributor on this module's storage account.
@@ -22,10 +23,12 @@ param storageBlobDataReaders array = []
 param storageBlobDataContributors array = []
 // Additional blob containers to create alongside the required 'deployment' container.
 param containers array = []
-var deploymentStorageAccountName = 'stg${uniqueString(functionAppName)}'
+
+var resolvedFunctionAppName = !empty(envName) && !endsWith(functionAppName, '-${envName}') ? '${functionAppName}-${envName}' : functionAppName
+var deploymentStorageAccountName = 'stg${uniqueString(resolvedFunctionAppName)}'
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2024-11-01' = {
-  name: 'asp${uniqueString(functionAppName)}'
+  name: 'asp${uniqueString(resolvedFunctionAppName)}'
   location: location
   sku: {
     name: 'FC1'
@@ -157,7 +160,7 @@ resource storageQueueContributorRoleAssignment 'Microsoft.Authorization/roleAssi
 // Other Function Apps (by base name) granted read/write access to this storage account,
 // e.g. a second Function App that needs to read or write blobs this app produces.
 resource storageBlobDataReaderSites 'Microsoft.Web/sites@2024-11-01' existing = [for name in storageBlobDataReaders: {
-  name: '${name}-${envName}'
+  name: !empty(envName) && !endsWith(name, '-${envName}') ? '${name}-${envName}' : name
 }]
 
 resource storageBlobDataReaderRoleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (name, i) in storageBlobDataReaders: {
@@ -171,7 +174,7 @@ resource storageBlobDataReaderRoleAssignments 'Microsoft.Authorization/roleAssig
 }]
 
 resource storageBlobDataContributorSites 'Microsoft.Web/sites@2024-11-01' existing = [for name in storageBlobDataContributors: {
-  name: '${name}-${envName}'
+  name: !empty(envName) && !endsWith(name, '-${envName}') ? '${name}-${envName}' : name
 }]
 
 resource storageBlobDataContributorRoleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (name, i) in storageBlobDataContributors: {
@@ -185,7 +188,7 @@ resource storageBlobDataContributorRoleAssignments 'Microsoft.Authorization/role
 }]
 
 resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
-  name: functionAppName
+  name: resolvedFunctionAppName
   location: location
   kind: 'functionapp,linux'
   identity: {
@@ -235,7 +238,7 @@ resource swiftConnection 'Microsoft.Web/sites/virtualNetworkConnections@2024-11-
 }
 
 module keyVaultSecretsUserRoleAssignment 'keyVaultRoleAssignment.bicep' = {
-  name: 'keyVaultSecretsUser-${functionAppName}'
+  name: 'keyVaultSecretsUser-${resolvedFunctionAppName}'
   scope: resourceGroup(keyVaultResourceGroupName)
   params: {
     keyVaultName: keyVaultName
@@ -245,7 +248,7 @@ module keyVaultSecretsUserRoleAssignment 'keyVaultRoleAssignment.bicep' = {
 
 resource functionAppDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   scope: functionApp
-  name: '${functionAppName}-diagnostics'
+  name: '${resolvedFunctionAppName}-diagnostics'
   properties: {
     workspaceId: logAnalyticsWorkspaceId
     logs: [

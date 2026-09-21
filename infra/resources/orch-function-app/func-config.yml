@@ -1,5 +1,5 @@
 
-functionAppName: orchestrator
+functionAppName: orch-function-app
 publicNetworkAccess: Disabled
 additionalAppSettings: {}
 storageBlobDataContributors:

@@ -1,0 +1,142 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.46.1.21595",
+      "templateHash": "12148009315565013949"
+    }
+  },
+  "parameters": {
+    "environment": {
+      "type": "string"
+    },
+    "dbConfig": {
+      "type": "object"
+    },
+    "envConfig": {
+      "type": "object"
+    },
+    "projectConfig": {
+      "type": "object"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "database",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "serverName": {
+            "value": "[parameters('envConfig').sqlServerName]"
+          },
+          "databaseName": {
+            "value": "[format('{0}-{1}', parameters('projectConfig').sqlDatabaseName, parameters('environment'))]"
+          },
+          "location": {
+            "value": "[parameters('envConfig').location]"
+          },
+          "sku": {
+            "value": "[parameters('dbConfig').sku]"
+          },
+          "maxSizeBytes": {
+            "value": "[parameters('dbConfig').maxSizeBytes]"
+          },
+          "autoPauseDelay": {
+            "value": "[parameters('dbConfig').autoPauseDelay]"
+          },
+          "minCapacity": {
+            "value": "[parameters('dbConfig').minCapacity]"
+          },
+          "requestedBackupStorageRedundancy": {
+            "value": "[parameters('dbConfig').requestedBackupStorageRedundancy]"
+          },
+          "useFreeLimit": {
+            "value": "[parameters('dbConfig').useFreeLimit]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "17514263011396998108"
+            }
+          },
+          "parameters": {
+            "serverName": {
+              "type": "string"
+            },
+            "databaseName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "sku": {
+              "type": "object",
+              "defaultValue": {
+                "name": "GP_S_Gen5_2",
+                "tier": "GeneralPurpose",
+                "family": "Gen5",
+                "capacity": 2
+              }
+            },
+            "maxSizeBytes": {
+              "type": "int",
+              "defaultValue": 34359738368
+            },
+            "autoPauseDelay": {
+              "type": "int",
+              "defaultValue": 60
+            },
+            "minCapacity": {
+              "type": "string",
+              "defaultValue": "0.5"
+            },
+            "requestedBackupStorageRedundancy": {
+              "type": "string",
+              "defaultValue": "Local"
+            },
+            "useFreeLimit": {
+              "type": "bool",
+              "defaultValue": true
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Sql/servers/databases",
+              "apiVersion": "2025-02-01-preview",
+              "name": "[format('{0}/{1}', parameters('serverName'), parameters('databaseName'))]",
+              "location": "[parameters('location')]",
+              "sku": "[parameters('sku')]",
+              "properties": {
+                "collation": "SQL_Latin1_General_CP1_CI_AS",
+                "maxSizeBytes": "[parameters('maxSizeBytes')]",
+                "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+                "zoneRedundant": false,
+                "readScale": "Disabled",
+                "autoPauseDelay": "[parameters('autoPauseDelay')]",
+                "requestedBackupStorageRedundancy": "[parameters('requestedBackupStorageRedundancy')]",
+                "minCapacity": "[json(parameters('minCapacity'))]",
+                "maintenanceConfigurationId": "[format('/subscriptions/{0}/providers/Microsoft.Maintenance/publicMaintenanceConfigurations/SQL_Default', subscription().subscriptionId)]",
+                "isLedgerOn": false,
+                "useFreeLimit": "[parameters('useFreeLimit')]",
+                "freeLimitExhaustionBehavior": "AutoPause",
+                "availabilityZone": "NoPreference"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

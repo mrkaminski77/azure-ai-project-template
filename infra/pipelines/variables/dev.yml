@@ -1,0 +1,11 @@
+# Pipeline variables for the 'dev' environment.
+# These variables are consumed by Azure DevOps YAML pipelines (AzureResourceManagerTemplateDeployment tasks, etc.).
+# Resource-level Bicep templates continue reading deep configuration (Key Vault, Easy Auth, Subnets, etc.)
+# directly from infra/env-config.yml via loadYamlContent.
+
+variables:
+  environment: dev
+  subscriptionId: 9763c68a-41e0-4829-828c-ba0bdd37b5eb
+  resourceGroupName: sra1np-rg-aiplatform
+  azureServiceConnection: '<your-service-connection>'
+  location: Australia East

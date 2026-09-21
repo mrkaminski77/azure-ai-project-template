@@ -21,8 +21,8 @@ for every resource, plus the pipelines that keep those resources and their code 
   changes. Infrastructure and application code are versioned and deployed independently.
 - **`register-pipelines.ps1`** — `az pipelines create` commands to register the YAML pipelines in
   `infra/pipelines/` and `code/pipelines/` against your Azure DevOps project.
-- **`docs/`** — high-level documentation describing how the components (resources, pipelines,
-  external repos) fit together for this project.
+- **`docs/`** — high-level documentation describing how the components (resources, pipelines, external repos) fit together for this project.
+  - [`docs/naming-and-identity-conventions.md`](docs/naming-and-identity-conventions.md) — rules and patterns for resource naming, environment suffixes, and system-assigned managed identity role assignments.
 
 ## Adding another instance of a resource
 

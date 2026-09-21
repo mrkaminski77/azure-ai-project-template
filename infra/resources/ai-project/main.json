@@ -1,0 +1,188 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.46.1.21595",
+      "templateHash": "15044515836385635083"
+    }
+  },
+  "parameters": {
+    "envConfig": {
+      "type": "object"
+    },
+    "projectConfig": {
+      "type": "object"
+    },
+    "aiConfig": {
+      "type": "object"
+    },
+    "environment": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "orchestratorFunctionAppName": "[format('{0}-{1}', parameters('aiConfig').orchestratorFunctionAppName, parameters('environment'))]",
+    "projectName": "[format('{0}-{1}', parameters('projectConfig').projectName, parameters('environment'))]"
+  },
+  "resources": {
+    "aiproject": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-aiproject",
+      "resourceGroup": "[parameters('envConfig').foundryResourceGroupName]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "foundryResourceName": {
+            "value": "[parameters('projectConfig').foundryResourceName]"
+          },
+          "projectName": {
+            "value": "[variables('projectName')]"
+          },
+          "orchestratorPrincipalId": {
+            "value": "[reference(resourceId('Microsoft.Web/sites', variables('orchestratorFunctionAppName')), '2022-03-01', 'Full').identity.principalId]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "9264912517447875650"
+            }
+          },
+          "parameters": {
+            "foundryResourceName": {
+              "type": "string"
+            },
+            "projectName": {
+              "type": "string"
+            },
+            "orchestratorPrincipalId": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "foundryUserRoleId": "53ca6127-db72-4b80-b1b0-d745d6d5456d"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.CognitiveServices/accounts/projects",
+              "apiVersion": "2026-05-01",
+              "name": "[format('{0}/{1}', parameters('foundryResourceName'), parameters('projectName'))]",
+              "location": "australiaeast",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "description": "Default project created with the resource",
+                "displayName": "[parameters('projectName')]"
+              }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.CognitiveServices/accounts/projects', split(format('{0}/{1}', parameters('foundryResourceName'), parameters('projectName')), '/')[0], split(format('{0}/{1}', parameters('foundryResourceName'), parameters('projectName')), '/')[1])]",
+              "name": "[guid(resourceId('Microsoft.CognitiveServices/accounts/projects', split(format('{0}/{1}', parameters('foundryResourceName'), parameters('projectName')), '/')[0], split(format('{0}/{1}', parameters('foundryResourceName'), parameters('projectName')), '/')[1]), parameters('orchestratorPrincipalId'), variables('foundryUserRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('foundryUserRoleId'))]",
+                "principalId": "[parameters('orchestratorPrincipalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts/projects', split(format('{0}/{1}', parameters('foundryResourceName'), parameters('projectName')), '/')[0], split(format('{0}/{1}', parameters('foundryResourceName'), parameters('projectName')), '/')[1])]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "mcpTools": {
+      "copy": {
+        "name": "mcpTools",
+        "count": "[length(items(parameters('aiConfig').mcpTools))]"
+      },
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('deploy-mcptool-{0}', items(parameters('aiConfig').mcpTools)[copyIndex()].key)]",
+      "resourceGroup": "[parameters('envConfig').foundryResourceGroupName]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "foundryProjectName": {
+            "value": "[format('{0}/{1}', parameters('projectConfig').foundryResourceName, variables('projectName'))]"
+          },
+          "mcpToolName": {
+            "value": "[items(parameters('aiConfig').mcpTools)[copyIndex()].key]"
+          },
+          "mcpFunctionAppName": {
+            "value": "[format('{0}-{1}', items(parameters('aiConfig').mcpTools)[copyIndex()].value.mcpFunctionAppName, parameters('environment'))]"
+          },
+          "audienceClientId": {
+            "value": "[parameters('envConfig').easyAuthConfig.entraClientId]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.46.1.21595",
+              "templateHash": "12349699673732877783"
+            }
+          },
+          "parameters": {
+            "foundryProjectName": {
+              "type": "string"
+            },
+            "mcpFunctionAppName": {
+              "type": "string"
+            },
+            "mcpToolName": {
+              "type": "string"
+            },
+            "audienceClientId": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.CognitiveServices/accounts/projects/connections",
+              "apiVersion": "2026-05-01",
+              "name": "[format('{0}/{1}/{2}', split(parameters('foundryProjectName'), '/')[0], split(parameters('foundryProjectName'), '/')[1], parameters('mcpToolName'))]",
+              "properties": {
+                "category": "RemoteTool",
+                "target": "[format('https://{0}.azurewebsites.net/mcp', parameters('mcpFunctionAppName'))]",
+                "authType": "ProjectManagedIdentity",
+                "useWorkspaceManagedIdentity": false,
+                "isSharedToAll": false,
+                "sharedUserList": [],
+                "peRequirement": "Required",
+                "peStatus": "Active",
+                "audience": "[format('api://{0}', parameters('audienceClientId'))]",
+                "metadata": {
+                  "type": "custom_MCP"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "aiproject"
+      ]
+    }
+  }
+}

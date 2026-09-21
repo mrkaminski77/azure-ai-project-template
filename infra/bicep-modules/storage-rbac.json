@@ -1,0 +1,65 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.46.1.21595",
+      "templateHash": "4597218504320341451"
+    }
+  },
+  "parameters": {
+    "functionAppName": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    },
+    "storageBlobDataContributors": {
+      "type": "array",
+      "defaultValue": []
+    },
+    "storageBlobDataReaders": {
+      "type": "array",
+      "defaultValue": []
+    }
+  },
+  "variables": {
+    "fullFunctionAppName": "[if(endsWith(parameters('functionAppName'), format('-{0}', parameters('environment'))), parameters('functionAppName'), format('{0}-{1}', parameters('functionAppName'), parameters('environment')))]",
+    "deploymentStorageAccountName": "[format('stg{0}', uniqueString(variables('fullFunctionAppName')))]",
+    "storageBlobDataReaderRoleId": "2a2b9908-6ea1-4ae2-8e65-a410df84e7d1",
+    "storageBlobDataContributorRoleId": "ba92f5b4-2d11-453d-a403-e96b0029c9fe"
+  },
+  "resources": [
+    {
+      "copy": {
+        "name": "storageBlobDataContributorRoleAssignments",
+        "count": "[length(parameters('storageBlobDataContributors'))]"
+      },
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts', variables('deploymentStorageAccountName'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', variables('deploymentStorageAccountName')), resourceId('Microsoft.Web/sites', if(endsWith(parameters('storageBlobDataContributors')[copyIndex()], format('-{0}', parameters('environment'))), parameters('storageBlobDataContributors')[copyIndex()], format('{0}-{1}', parameters('storageBlobDataContributors')[copyIndex()], parameters('environment')))), variables('storageBlobDataContributorRoleId'))]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('storageBlobDataContributorRoleId'))]",
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', if(endsWith(parameters('storageBlobDataContributors')[copyIndex()], format('-{0}', parameters('environment'))), parameters('storageBlobDataContributors')[copyIndex()], format('{0}-{1}', parameters('storageBlobDataContributors')[copyIndex()], parameters('environment')))), '2024-11-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "copy": {
+        "name": "storageBlobDataReaderRoleAssignments",
+        "count": "[length(parameters('storageBlobDataReaders'))]"
+      },
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts', variables('deploymentStorageAccountName'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', variables('deploymentStorageAccountName')), resourceId('Microsoft.Web/sites', if(endsWith(parameters('storageBlobDataReaders')[copyIndex()], format('-{0}', parameters('environment'))), parameters('storageBlobDataReaders')[copyIndex()], format('{0}-{1}', parameters('storageBlobDataReaders')[copyIndex()], parameters('environment')))), variables('storageBlobDataReaderRoleId'))]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('storageBlobDataReaderRoleId'))]",
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', if(endsWith(parameters('storageBlobDataReaders')[copyIndex()], format('-{0}', parameters('environment'))), parameters('storageBlobDataReaders')[copyIndex()], format('{0}-{1}', parameters('storageBlobDataReaders')[copyIndex()], parameters('environment')))), '2024-11-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      }
+    }
+  ]
+}

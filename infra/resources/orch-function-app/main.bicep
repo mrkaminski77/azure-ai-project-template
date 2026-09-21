@@ -22,9 +22,13 @@ module functionApp '../../bicep-modules/flexConsumption.bicep' = {
     easyAuthConfig: envConfig.?easyAuthConfig ?? {}
     additionalAppSettings: additionalAppSettings
     envName: environment
-    storageBlobDataReaders: funcConfig.?storageBlobDataReaders ?? []
-    storageBlobDataContributors: funcConfig.?storageBlobDataContributors ?? []
     containers: funcConfig.?containers ?? []
+    // storageBlobDataReaders and storageBlobDataContributors are intentionally
+    // omitted here. Cross-app RBAC is handled in a separate pipeline stage
+    // (storage-rbac.bicep) so that this deployment does not depend on other
+    // function apps existing yet. The function app's own self-RBAC (Blob Owner,
+    // Queue/Table Contributor) is still applied inside flexConsumption.bicep
+    // because the storage account is always co-deployed in the same template.
   }
 }
 

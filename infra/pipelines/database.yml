@@ -1,3 +1,11 @@
+parameters:
+  - name: environment
+    displayName: 'Target Environment'
+    type: string
+    default: dev
+    values:
+      - dev
+
 trigger:
   branches:
     include:
@@ -7,7 +15,7 @@ trigger:
       - infra/resources/database/**
 
 variables:
-  - template: 'infra/env-config.yml'
+  - template: variables/${{ parameters.environment }}.yml
 
 stages:
   - stage: DeployDatabase
@@ -28,4 +36,5 @@ stages:
               templateLocation: 'Linked artifact'
               csmFile: '$(System.DefaultWorkingDirectory)/infra/resources/database/main.bicep'
               csmParametersFile: '$(System.DefaultWorkingDirectory)/infra/resources/database/main.bicepparam'
+              overrideParameters: '-environment $(environment)'
             displayName: 'Deploy Database Bicep'

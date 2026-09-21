@@ -1,3 +1,11 @@
+parameters:
+  - name: environment
+    displayName: 'Target Environment'
+    type: string
+    default: dev
+    values:
+      - dev
+
 trigger:
   branches:
     include:
@@ -7,7 +15,7 @@ trigger:
       - infra/resources/ai-project/**
 
 variables:
-  - template: 'infra/env-config.yml'
+  - template: variables/${{ parameters.environment }}.yml
 
 stages:
   - stage: DeployAIProject
@@ -29,6 +37,7 @@ stages:
               templateLocation: 'Linked artifact'
               csmFile: '$(System.DefaultWorkingDirectory)/infra/resources/ai-project/main.bicep'
               csmParametersFile: '$(System.DefaultWorkingDirectory)/infra/resources/ai-project/main.bicepparam'
+              overrideParameters: '-environment $(environment)'
             displayName: 'Deploy AI Project + MCP Tools Bicep'
           - task: AzureCLI@2
             inputs:

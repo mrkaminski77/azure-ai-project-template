@@ -1,35 +1,75 @@
+parameters:
+  - name: environment
+    displayName: 'Target Environment'
+    type: string
+    default: dev
+    values:
+      - dev
+  - name: runRbacOnly
+    displayName: 'Re-run cross-app RBAC assignments only (skip function app deploy)'
+    type: boolean
+    default: false
+
 trigger:
   branches:
     include:
       - main
   paths:
     include:
-      - infra/resources/orchestrator/**
+      - infra/resources/orch-function-app/**
 
 variables:
-  - template: 'infra/env-config.yml'
+  - template: variables/${{ parameters.environment }}.yml
 
 stages:
--  stage: DeployOrchestrator
-  displayName: 'Deploy Orchestrator'
-  jobs:
-    - job: Deploy
-      displayName: 'Deploy Orchestrator Job'
-      steps:
-        - script: echo "Deploying Orchestrator"
-          displayName: 'Deploy Orchestrator Step'
-        - checkout: self
-        - task: AzureResourceManagerTemplateDeployment@3
-          inputs:
-            deploymentScope: 'Resource Group'
-            azureResourceManagerConnection: '$(azureServiceConnection)'
-            subscriptionId: '$(subscriptionId)'
-            action: 'Create Or Update Resource Group'
-            resourceGroupName: '$(resourceGroupName)'
-            location: '$(location)'
-            templateLocation: 'Linked artifact'
-            csmFile: '$(System.DefaultWorkingDirectory)/infra/orchestrator/main.bicep'
-            csmParametersFile: '$(System.DefaultWorkingDirectory)/infra/orchestrator/main.bicepparam'
-            # use overrideParameters: >- if you want to override parameters in the Bicep parameters file
-          displayName: 'Deploy Orchestrator Bicep'
-          
+  - stage: DeployFunctionApp
+    displayName: 'Deploy Orchestrator Function App'
+    condition: not(parameters.runRbacOnly)
+    jobs:
+      - job: Deploy
+        displayName: 'Deploy Function App'
+        steps:
+          - checkout: self
+          - task: AzureResourceManagerTemplateDeployment@3
+            inputs:
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: '$(azureServiceConnection)'
+              subscriptionId: '$(subscriptionId)'
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: '$(resourceGroupName)'
+              location: '$(location)'
+              templateLocation: 'Linked artifact'
+              csmFile: '$(System.DefaultWorkingDirectory)/infra/resources/orch-function-app/main.bicep'
+              csmParametersFile: '$(System.DefaultWorkingDirectory)/infra/resources/orch-function-app/main.bicepparam'
+              # Pass environment explicitly so Bicep does not fall back to the 'dev' default.
+              overrideParameters: '-environment $(environment)'
+            displayName: 'Deploy Orchestrator Function App Bicep'
+
+  - stage: AssignCrossAppRbac
+    displayName: 'Assign Cross-App Storage RBAC'
+    dependsOn: DeployFunctionApp
+    # Run when DeployFunctionApp succeeded *or* was intentionally skipped via runRbacOnly.
+    condition: in(dependencies.DeployFunctionApp.result, 'Succeeded', 'SucceededWithIssues', 'Skipped')
+    jobs:
+      - job: AssignRbac
+        displayName: 'Assign Storage RBAC to Cross-App Identities'
+        # continueOnError: true at job level means this stage shows as
+        # "Succeeded with issues" (yellow) rather than failing the whole
+        # pipeline when a referenced app hasn't been deployed yet. Run the
+        # pipeline again with runRbacOnly=true once all apps are deployed.
+        continueOnError: true
+        steps:
+          - checkout: self
+          - task: AzureResourceManagerTemplateDeployment@3
+            inputs:
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: '$(azureServiceConnection)'
+              subscriptionId: '$(subscriptionId)'
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: '$(resourceGroupName)'
+              location: '$(location)'
+              templateLocation: 'Linked artifact'
+              csmFile: '$(System.DefaultWorkingDirectory)/infra/bicep-modules/storage-rbac.bicep'
+              csmParametersFile: '$(System.DefaultWorkingDirectory)/infra/resources/orch-function-app/storage-rbac.bicepparam'
+              overrideParameters: '-environment $(environment)'
+            displayName: 'Assign Cross-App Storage RBAC'

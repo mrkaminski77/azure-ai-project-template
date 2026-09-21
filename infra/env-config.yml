@@ -19,7 +19,7 @@ dev:
   flexConsumptionSubnetId: /subscriptions/9763c68a-41e0-4829-828c-ba0bdd37b5eb/resourceGroups/sra1np-rg-aiplatform/providers/Microsoft.Network/virtualNetworks/sra1t-vnet-aiplatform/subnets/outbound
 
   foundryResourceGroupName: sra1np-rg-aiplatform
-  foundryResourceName: sra1t-foundry-aiplatform
+  foundryName: sra1t-foundry-aiplatform
 
   easyAuthConfig:
     entraClientId: 485bb1e6-01e0-4238-90cb-491deea74f92
